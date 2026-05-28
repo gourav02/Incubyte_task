@@ -1,5 +1,10 @@
 # Salary Management Tool
 
+**Overview**
+
+<img width="1720" height="1041" alt="Screenshot 2026-05-28 at 4 02 32 PM" src="https://github.com/user-attachments/assets/f82d0cba-4971-4b33-a79b-fe00a07eaec4" />
+<img width="1728" height="987" alt="Screenshot 2026-05-28 at 4 02 40 PM" src="https://github.com/user-attachments/assets/56076ad9-e27d-41c7-a387-3605c65ea3a9" />
+
 A minimal yet usable salary management tool for an organization with 10,000 employees.
 
 ## Tech Stack

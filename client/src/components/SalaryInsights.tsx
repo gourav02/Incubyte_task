@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import type { SalaryInsightByCountry, SalaryInsightByJobTitle, SalarySummary } from "@/types/employee"
 import { insightsApi, employeeApi } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -8,26 +8,46 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Badge } from "@/components/ui/badge"
 import { Users, DollarSign, Globe, Briefcase, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react"
 
-const PAGE_SIZE = 5
+const PAGE_SIZE_OPTIONS = [5, 10, 20, 50, 100]
 
-function usePagination<T>(items: T[], pageSize = PAGE_SIZE) {
+function usePagination<T>(items: T[], initialPageSize = 5) {
   const [page, setPage] = useState(1)
-  const totalPages = Math.ceil(items.length / pageSize)
+  const [pageSize, setPageSize] = useState(initialPageSize)
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+
+  // Reset to page 1 when the data length changes (filter applied, new data loaded)
+  const prevLengthRef = useRef(items.length)
+  useEffect(() => {
+    if (items.length !== prevLengthRef.current) {
+      setPage(1)
+      prevLengthRef.current = items.length
+    }
+  }, [items.length])
+
+  // Clamp page if it exceeds totalPages (e.g. after page size increase)
+  const safePage = Math.min(page, totalPages)
+
   const paginatedItems = useMemo(
-    () => items.slice((page - 1) * pageSize, page * pageSize),
-    [items, page, pageSize]
+    () => items.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [items, safePage, pageSize]
   )
-  const safeSetPage = (p: number) => setPage(Math.max(1, Math.min(p, totalPages || 1)))
+
+  const handleSetPage = (p: number) => setPage(Math.max(1, Math.min(p, totalPages)))
+  const handleSetPageSize = (size: number) => {
+    setPageSize(size)
+    setPage(1)
+  }
 
   return {
-    page,
+    page: safePage,
+    pageSize,
     totalPages,
     total: items.length,
     items: paginatedItems,
-    setPage: safeSetPage,
-    start: (page - 1) * pageSize + 1,
-    end: Math.min(page * pageSize, items.length),
-    resetPage: () => setPage(1),
+    setPage: handleSetPage,
+    setPageSize: handleSetPageSize,
+    start: items.length === 0 ? 0 : (safePage - 1) * pageSize + 1,
+    end: Math.min(safePage * pageSize, items.length),
   }
 }
 
@@ -180,11 +200,22 @@ export function SalaryInsights() {
                 ))}
               </TableBody>
             </Table>
-            {countryPag.totalPages > 1 && (
+            {countryPag.total > 0 && (
               <div className="flex items-center justify-between pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {countryPag.start}–{countryPag.end} of {countryPag.total}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {countryPag.start}–{countryPag.end} of {countryPag.total}
+                  </p>
+                  <Select
+                    value={countryPag.pageSize}
+                    onChange={(e) => countryPag.setPageSize(Number(e.target.value))}
+                    className="w-20 h-8 text-xs"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </Select>
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" disabled={countryPag.page <= 1} onClick={() => countryPag.setPage(countryPag.page - 1)}>
                     <ChevronLeft className="h-4 w-4" /> Prev
@@ -226,11 +257,22 @@ export function SalaryInsights() {
                 ))}
               </TableBody>
             </Table>
-            {jobTitlePag.totalPages > 1 && (
+            {jobTitlePag.total > 0 && (
               <div className="flex items-center justify-between pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {jobTitlePag.start}–{jobTitlePag.end} of {jobTitlePag.total}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {jobTitlePag.start}–{jobTitlePag.end} of {jobTitlePag.total}
+                  </p>
+                  <Select
+                    value={jobTitlePag.pageSize}
+                    onChange={(e) => jobTitlePag.setPageSize(Number(e.target.value))}
+                    className="w-20 h-8 text-xs"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </Select>
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" disabled={jobTitlePag.page <= 1} onClick={() => jobTitlePag.setPage(jobTitlePag.page - 1)}>
                     <ChevronLeft className="h-4 w-4" /> Prev

@@ -43,7 +43,10 @@ export function EmployeeForm({ employee, onSubmit, onCancel, isLoading }: Employ
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
     if (!formData.full_name.trim()) newErrors.full_name = "Full name is required"
-    if (formData.salary < 0) newErrors.salary = "Salary must be non-negative"
+    if (!formData.job_title) newErrors.job_title = "Job title is required"
+    if (!formData.country) newErrors.country = "Country is required"
+    if (!formData.department) newErrors.department = "Department is required"
+    if (formData.salary === undefined || formData.salary === null || isNaN(formData.salary) || formData.salary <= 0) newErrors.salary = "Salary must be greater than 0"
     if (!formData.hire_date) newErrors.hire_date = "Hire date is required"
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -59,7 +62,7 @@ export function EmployeeForm({ employee, onSubmit, onCancel, isLoading }: Employ
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="full_name">Full Name</Label>
+        <Label htmlFor="full_name">Full Name *</Label>
         <Input
           id="full_name"
           value={formData.full_name}
@@ -71,7 +74,7 @@ export function EmployeeForm({ employee, onSubmit, onCancel, isLoading }: Employ
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="job_title">Job Title</Label>
+          <Label htmlFor="job_title">Job Title *</Label>
           <Select
             id="job_title"
             value={formData.job_title}
@@ -84,7 +87,7 @@ export function EmployeeForm({ employee, onSubmit, onCancel, isLoading }: Employ
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="department">Department</Label>
+          <Label htmlFor="department">Department *</Label>
           <Select
             id="department"
             value={formData.department}
@@ -99,7 +102,7 @@ export function EmployeeForm({ employee, onSubmit, onCancel, isLoading }: Employ
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="country">Country</Label>
+          <Label htmlFor="country">Country *</Label>
           <Select
             id="country"
             value={formData.country}
@@ -112,11 +115,10 @@ export function EmployeeForm({ employee, onSubmit, onCancel, isLoading }: Employ
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="salary">Salary (USD)</Label>
+          <Label htmlFor="salary">Salary (USD) *</Label>
           <Input
             id="salary"
             type="number"
-            min="0"
             value={formData.salary}
             onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
           />
@@ -125,7 +127,7 @@ export function EmployeeForm({ employee, onSubmit, onCancel, isLoading }: Employ
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="hire_date">Hire Date</Label>
+        <Label htmlFor="hire_date">Hire Date *</Label>
         <Input
           id="hire_date"
           type="date"

@@ -1,11 +1,35 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type { SalaryInsightByCountry, SalaryInsightByJobTitle, SalarySummary } from "@/types/employee"
 import { insightsApi, employeeApi } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Users, DollarSign, Globe, Briefcase, TrendingUp, TrendingDown } from "lucide-react"
+import { Users, DollarSign, Globe, Briefcase, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react"
+
+const PAGE_SIZE = 5
+
+function usePagination<T>(items: T[], pageSize = PAGE_SIZE) {
+  const [page, setPage] = useState(1)
+  const totalPages = Math.ceil(items.length / pageSize)
+  const paginatedItems = useMemo(
+    () => items.slice((page - 1) * pageSize, page * pageSize),
+    [items, page, pageSize]
+  )
+  const safeSetPage = (p: number) => setPage(Math.max(1, Math.min(p, totalPages || 1)))
+
+  return {
+    page,
+    totalPages,
+    total: items.length,
+    items: paginatedItems,
+    setPage: safeSetPage,
+    start: (page - 1) * pageSize + 1,
+    end: Math.min(page * pageSize, items.length),
+    resetPage: () => setPage(1),
+  }
+}
 
 function useSummary() {
   const [summary, setSummary] = useState<SalarySummary | null>(null)
@@ -53,9 +77,12 @@ const formatCurrency = (val: number) =>
 export function SalaryInsights() {
   const [countryFilter, setCountryFilter] = useState("")
   const summary = useSummary()
-  const countryInsights = useCountryInsights(countryFilter)
-  const jobTitleInsights = useJobTitleInsights(countryFilter)
+  const countryInsightsAll = useCountryInsights(countryFilter)
+  const jobTitleInsightsAll = useJobTitleInsights(countryFilter)
   const countries = useCountries()
+
+  const countryPag = usePagination(countryInsightsAll)
+  const jobTitlePag = usePagination(jobTitleInsightsAll)
 
   return (
     <div className="space-y-6">
@@ -140,7 +167,7 @@ export function SalaryInsights() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {countryInsights.map((row) => (
+                {countryPag.items.map((row) => (
                   <TableRow key={row.country}>
                     <TableCell className="font-medium">{row.country}</TableCell>
                     <TableCell className="text-right">{formatCurrency(row.min_salary)}</TableCell>
@@ -153,6 +180,21 @@ export function SalaryInsights() {
                 ))}
               </TableBody>
             </Table>
+            {countryPag.totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {countryPag.start}–{countryPag.end} of {countryPag.total}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={countryPag.page <= 1} onClick={() => countryPag.setPage(countryPag.page - 1)}>
+                    <ChevronLeft className="h-4 w-4" /> Prev
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={countryPag.page >= countryPag.totalPages} onClick={() => countryPag.setPage(countryPag.page + 1)}>
+                    Next <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -172,7 +214,7 @@ export function SalaryInsights() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {jobTitleInsights.map((row) => (
+                {jobTitlePag.items.map((row) => (
                   <TableRow key={`${row.country}-${row.job_title}`}>
                     {!countryFilter && <TableCell>{row.country}</TableCell>}
                     <TableCell className="font-medium">{row.job_title}</TableCell>
@@ -184,6 +226,21 @@ export function SalaryInsights() {
                 ))}
               </TableBody>
             </Table>
+            {jobTitlePag.totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {jobTitlePag.start}–{jobTitlePag.end} of {jobTitlePag.total}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={jobTitlePag.page <= 1} onClick={() => jobTitlePag.setPage(jobTitlePag.page - 1)}>
+                    <ChevronLeft className="h-4 w-4" /> Prev
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={jobTitlePag.page >= jobTitlePag.totalPages} onClick={() => jobTitlePag.setPage(jobTitlePag.page + 1)}>
+                    Next <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
